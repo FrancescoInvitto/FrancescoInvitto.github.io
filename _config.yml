@@ -11,3 +11,6 @@ search_enabled: true
 # Opzionale: attiva il supporto per le formule matematiche (LaTeX)
 kramdown:
   math_engine: mathjax
+
+exclude:
+  - README.md
