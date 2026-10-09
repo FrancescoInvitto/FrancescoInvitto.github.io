@@ -1,0 +1,11 @@
+title: "Archivio didattico"
+tagline: "Materiale a cura di Francesco Invitto"
+description: "Dispense, esercitazioni e risorse per gli studenti."
+theme: "just-the-docs"
+
+# Abilita la barra di ricerca integrata
+search_enabled: true
+
+# Opzionale: attiva il supporto per le formule matematiche (LaTeX)
+kramdown:
+  math_engine: mathjax
