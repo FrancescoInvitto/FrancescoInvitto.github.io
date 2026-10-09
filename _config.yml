@@ -2,6 +2,8 @@ title: "Archivio didattico"
 tagline: "Materiale a cura di Francesco Invitto"
 description: "Dispense, esercitazioni e risorse per gli studenti."
 remote_theme: just-the-docs/just-the-docs
+plugins:
+  - jekyll-remote-theme
 
 # Abilita la barra di ricerca integrata
 search_enabled: true
