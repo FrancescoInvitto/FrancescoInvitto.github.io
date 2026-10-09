@@ -31,7 +31,7 @@ jobs:
 
       - name: Install dependencies & Build
         run: |
-          gem install bundler jekyll jekyll-remote-theme jekyll-seo-tag
+          gem install bundler jekyll jekyll-remote-theme jekyll-seo-tag just-the-docs
           jekyll build --destination ./_site
         env:
           JEKYLL_ENV: production
