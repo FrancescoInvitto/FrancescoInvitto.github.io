@@ -4,6 +4,7 @@ description: "Dispense, esercitazioni e risorse per gli studenti."
 remote_theme: just-the-docs/just-the-docs
 plugins:
   - jekyll-remote-theme
+  - jekyll-seo-tag
 
 # Abilita la barra di ricerca integrata
 search_enabled: true
