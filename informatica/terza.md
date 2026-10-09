@@ -10,7 +10,7 @@ nav_order: 1
 ### 📘 Modulo 1: Algoritmi e Diagrammi di Flusso
 In questo primo modulo affronteremo i concetti base della logica di programmazione. Impareremo a scomporre un problema in passi elementari e a rappresentarlo graficamente con i diagrammi di flusso (flowchart) prima di passare al codice.
 
-###📙 Modulo 2: Il Linguaggio C
+### 📙 Modulo 2: Il Linguaggio C
 Il linguaggio C è uno dei più importanti e longevi della programmazione: ha gettato le basi di molti linguaggi moderni ed è ancora oggi utilizzato per applicazioni che richiedono efficienza e controllo diretto sull’hardware.
 
 Lo studio degli argomenti proposti accompagna passo dopo passo lo studente nel comprendere i concetti fondamentali della programmazione: dalla gestione dei dati con variabili e strutture, fino all’organizzazione del codice attraverso funzioni e array multidimensionali.
