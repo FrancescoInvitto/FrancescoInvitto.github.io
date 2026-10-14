@@ -25,6 +25,13 @@ Studio dei principi fondamentali della trasmissione dei dati. Il modulo analizza
 * [01 - Codifica di sorgente (PDF)](/materiale/[TPSI]08-CodificaSorgente.pdf)
 * [02 - Codifica di canale (PDF)](/materiale/TPSI]09-CodificaCanale.pdf)
 
-### 📗 Modulo 3: I Sistemi Operativi
+### 📗 Modulo 3: Introduzione ai Sistemi Operativi
+Il Sistema Operativo (SO) è il software fondamentale che agisce da intermediario tra l'hardware del computer e l'utente o le applicazioni. Gestisce le risorse fisiche della macchina (processore, memoria, periferiche) e fornisce un ambiente astratto, sicuro ed efficiente in cui eseguire i programmi.
+
+* [00 - Che cos'è un Sistema Operativo (PDF)](/materiale/[TPSI]00-IntroduzioneSistemiOperativi.pdf)
+* [01 - Tipi di interfacce (PDF)](/materiale/[TPSI]01-Interfaccia.pdf)
+* [02 - User Mode e Kernel Mode (PDF)](/materiale/[TPSI]02-KernelEUserMode.pdf)
+* [03 - Tassonomia (PDF)](/materiale/[TPSI]03-Tassonomia.pdf)
+* [04 - Architetture (PDF)](/materiale/[TPSI]04-Architetture.pdf)
 
 ### 📝 Esercitazioni
