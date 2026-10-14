@@ -33,3 +33,5 @@ Il Sistema Operativo (SO) è il software fondamentale che agisce da intermediari
 * [02 - User Mode e Kernel Mode (PDF)](/tpsi/materiale/[TPSI]02-KernelEUserMode.pdf)
 
 ### 📝 Esercitazioni
+* [E01 - Esercizi conversioni tra basi (PDF)](/tpsi/materiale/[TPSI]E01-EserciziConversioni.pdf)
+* [E01 - Soluzioni (PDF)](/tpsi/materiale/[TPSI]E01-SoluzioniConversioni.pdf)
