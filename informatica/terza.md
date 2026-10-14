@@ -16,7 +16,7 @@ Il linguaggio C è uno dei più importanti e longevi della programmazione: ha ge
 Lo studio degli argomenti proposti accompagna passo dopo passo lo studente nel comprendere i concetti fondamentali della programmazione: dalla gestione dei dati con variabili e strutture, fino all’organizzazione del codice attraverso funzioni e array multidimensionali.
 
 Attraverso esercizi ed esempi pratici sarà possibile familiarizzare con la logica del linguaggio e acquisire competenze che resteranno valide anche oltre il C, costituendo un solido punto di partenza per lo sviluppo in altri linguaggi di programmazione.
-* [00 - Introduzione al linguaggio (PDF)](materiale/[C]00-Introduzione.pdf)
+* [00 - Introduzione al linguaggio (PDF)](/informatica/materiale/[C]00-Introduzione.pdf)
 * [01 - Variabili e costanti (PDF)](/materiale/[C]01-VariabiliCostanti.pdf)
 * [02 - Operatori (PDF)](/materiale/[C]02-Operatori.pdf)
 * [03 - Gestione I/O (PDF)](/materiale/[C]03-InputOutput.pdf)
