@@ -6,7 +6,7 @@
   <title>Estrattore Studenti</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-gradient: linear-gradient(135deg, #0b132b 0%, #1c2541 50%, #0b132b 100%);
@@ -14,11 +14,9 @@
       --card-border: rgba(0, 180, 216, 0.25);
       --primary-blue: #0077b6;
       --accent-cyan: #00b4d8;
-      --accent-glow: #90e0ef;
       --text-main: #f8f9fa;
       --text-muted: #94a3b8;
       --danger: #ef4444;
-      --success: #10b981;
     }
 
     * {
@@ -201,7 +199,6 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      position: relative;
     }
 
     .slot-window {
@@ -301,7 +298,7 @@
       cursor: not-allowed;
     }
 
-    /* Modal Popups */
+    /* Modals */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -369,11 +366,6 @@
       font-size: 0.85rem;
       color: var(--text-muted);
     }
-
-    footer a {
-      color: var(--accent-cyan);
-      text-decoration: none;
-    }
   </style>
 </head>
 <body>
@@ -387,7 +379,6 @@
   </header>
 
   <main>
-    <!-- Pannello di Controllo -->
     <div class="panel">
       <div class="class-selector-group">
         <label for="classSelect">Classe Attiva</label>
@@ -402,12 +393,11 @@
       </div>
 
       <div class="stats">
-        <span>Studenti disponibili: <strong id="countAvailable">0</strong></span>
+        <span>Disponibili: <strong id="countAvailable">0</strong></span>
         <span>Estratti: <strong id="countDrawn">0</strong></span>
       </div>
     </div>
 
-    <!-- Area Slot Machine -->
     <div class="panel slot-stage">
       <div class="slot-window">
         <div class="slot-target-line"></div>
@@ -420,7 +410,7 @@
   </main>
 
   <footer>
-    Sviluppato per la Didattica | <span id="teacherInfo">Prof. Invitto Francesco</span>
+    Sviluppato per la Didattica | <span id="teacherInfo">Docente</span>
   </footer>
 
   <!-- Modal Esito Estrazione -->
@@ -455,7 +445,7 @@
   </div>
 
   <script>
-    // --- GESTIONE STATO & DATI ---
+    // DATI E STATO
     let classesData = JSON.parse(localStorage.getItem('teacher_classes')) || {
       "Classe Esempio": ["Mario Rossi", "Luigi Verdi", "Anna Bianchi", "Giuseppe Garibaldi", "Elena Cornaro", "Galileo Galilei"]
     };
@@ -466,49 +456,28 @@
     let isSpinning = false;
     let audioEnabled = true;
 
-    // Web Audio API
+    // AUDIO SYSTEM (Solo Tic)
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
 
-    function initAudio() {
-      if (!audioCtx) {
-        audioCtx = new AudioContext();
-      }
-    }
-
     function playTickSound() {
-      if (!audioEnabled || !audioCtx) return;
+      if (!audioEnabled) return;
+      if (!audioCtx) audioCtx = new AudioContext();
+      
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.03);
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.03);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.02);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.02);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.03);
+      osc.stop(audioCtx.currentTime + 0.02);
     }
 
-    function playWinSound() {
-      if (!audioEnabled || !audioCtx) return;
-      const notes = [261.63, 329.63, 392.00, 523.25];
-      notes.forEach((freq, idx) => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.1);
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime + idx * 0.1);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + idx * 0.1 + 0.4);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(audioCtx.currentTime + idx * 0.1);
-        osc.stop(audioCtx.currentTime + idx * 0.1 + 0.4);
-      });
-    }
-
-    // --- ELEMENTI DOM ---
+    // ELEMENTI DOM
     const classSelect = document.getElementById('classSelect');
     const countAvailable = document.getElementById('countAvailable');
     const countDrawn = document.getElementById('countDrawn');
@@ -529,7 +498,6 @@
     const btnResetAbsents = document.getElementById('btnResetAbsents');
     const audioToggleBtn = document.getElementById('audioToggleBtn');
 
-    // --- INIZIALIZZAZIONE ---
     function init() {
       renderClassOptions();
       loadClassData(currentClassName);
@@ -571,43 +539,46 @@
       }
     }
 
-    // --- SLOT MACHINE CON SEQUENZA UNICA (NO DUPLICATI IN SEQUENZA) ---
+    // ANIMAZIONE ANIMATA (PARTE LENTA -> ACCELERA -> DECELEVA E SI FERMA SUL VINCITORE)
     function startSpin() {
       if (availableStudents.length === 0 || isSpinning) return;
-      initAudio();
       isSpinning = true;
       spinBtn.disabled = true;
 
-      // Scegli lo studente vincente
       const winnerIndex = Math.floor(Math.random() * availableStudents.length);
       currentWinner = availableStudents[winnerIndex];
 
-      // Costruisci una sequenza di scorrimento senza duplicati adiacenti
       const itemHeight = 60;
-      const totalTicks = 80; // numero di elementi che scorreranno nei 15s
-      const reelSequence = [];
+      const targetWindowOffset = 80; // posiziona al centro della finestra 220px
+      const totalSteps = 120; 
 
-      let lastStudent = "";
-      for (let i = 0; i < totalTicks - 1; i++) {
+      // Generazione sequenza circolare continua
+      const reelSequence = [];
+      let studentPool = [...availableStudents];
+      let lastPicked = "";
+
+      for (let i = 0; i < totalSteps - 2; i++) {
         let candidate;
-        if (availableStudents.length > 1) {
+        if (studentPool.length > 1) {
           do {
-            candidate = availableStudents[Math.floor(Math.random() * availableStudents.length)];
-          } while (candidate === lastStudent);
+            candidate = studentPool[Math.floor(Math.random() * studentPool.length)];
+          } while (candidate === lastPicked);
         } else {
-          candidate = availableStudents[0];
+          candidate = studentPool[0];
         }
         reelSequence.push(candidate);
-        lastStudent = candidate;
+        lastPicked = candidate;
       }
-      // L'ultimo elemento della sequenza è esattamente il vincitore
+      
+      // Gli ultimi elementi garantiscono la continuazione visiva dopo il vincitore
       reelSequence.push(currentWinner);
+      const nextStudentAfterWinner = studentPool[(winnerIndex + 1) % studentPool.length] || currentWinner;
+      const secondNextStudent = studentPool[(winnerIndex + 2) % studentPool.length] || currentWinner;
+      reelSequence.push(nextStudentAfterWinner);
+      reelSequence.push(secondNextStudent);
 
-      // Renderizza la lista nella Slot Reel
+      // Renderizza elementi
       slotReel.innerHTML = '';
-      slotReel.style.transition = 'none';
-      slotReel.style.transform = 'translateY(0px)';
-
       reelSequence.forEach(name => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'slot-item';
@@ -615,33 +586,58 @@
         slotReel.appendChild(itemDiv);
       });
 
-      // Animazione di scorrimento fisicamente bilanciata a 15 Secondi (15000 ms)
-      const targetY = -(totalTicks - 1) * itemHeight + 80; // Allinea al centro della finestra (220px / 2 - 30px = 80px)
-      const duration = 15000;
+      const winnerPosIndex = totalSteps - 2;
+      const targetY = -(winnerPosIndex * itemHeight) + targetWindowOffset;
+      const duration = 15000; // 15 secondi esatti
 
-      // Applica la transizione cubic-bezier per accelerazione iniziale e lento arresto finale
-      slotReel.style.transition = `transform ${duration}ms cubic-bezier(0.15, 0.85, 0.35, 1)`;
-      
-      requestAnimationFrame(() => {
-        slotReel.style.transform = `translateY(${targetY}px)`;
-      });
+      let startTime = null;
+      let lastItemIndex = -1;
 
-      // Riproduce l'effetto sonoro durante lo scorrimento
-      let tickInterval = setInterval(() => {
-        playTickSound();
-      }, 150);
+      // Curva custom: parte lenta, accelera a metà, decelera e si ferma con precisione
+      function customEase(t) {
+        if (t < 0.3) {
+          // Accelerazione iniziale graduale
+          return (Math.pow(t / 0.3, 2) * 0.2);
+        } else if (t < 0.7) {
+          // Fase ad alta velocità
+          const subT = (t - 0.3) / 0.4;
+          return 0.2 + subT * 0.55;
+        } else {
+          // Decelerazione finale uniforme fino all'arresto
+          const subT = (t - 0.7) / 0.3;
+          return 0.75 + (1 - Math.pow(1 - subT, 3)) * 0.25;
+        }
+      }
 
-      setTimeout(() => {
-        clearInterval(tickInterval);
-        isSpinning = false;
-        playWinSound();
-        showWinnerModal(currentWinner);
+      function animateSlot(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = customEase(progress);
 
-        // Aggiorna elenchi
-        drawnStudents.push(currentWinner);
-        availableStudents = availableStudents.filter(s => s !== currentWinner);
-        updateStats();
-      }, duration);
+        const currentY = easedProgress * targetY;
+        slotReel.style.transform = `translateY(${currentY}px)`;
+
+        // Calcola quale elemento sta passando al centro per riprodurre il TIC
+        const currentPassedIndex = Math.floor(Math.abs(currentY) / itemHeight);
+        if (currentPassedIndex !== lastItemIndex) {
+          playTickSound();
+          lastItemIndex = currentPassedIndex;
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animateSlot);
+        } else {
+          // Fine animazione
+          isSpinning = false;
+          showWinnerModal(currentWinner);
+          drawnStudents.push(currentWinner);
+          availableStudents = availableStudents.filter(s => s !== currentWinner);
+          updateStats();
+        }
+      }
+
+      requestAnimationFrame(animateSlot);
     }
 
     function showWinnerModal(name) {
@@ -649,7 +645,7 @@
       winnerModal.classList.add('active');
     }
 
-    // --- EVENT LISTENERS ---
+    // GESTIONE EVENTI
     spinBtn.addEventListener('click', startSpin);
 
     classSelect.addEventListener('change', (e) => {
@@ -662,7 +658,6 @@
 
     btnMarkAbsent.addEventListener('click', () => {
       winnerModal.classList.remove('active');
-      // Rimuovi anche da estratti
       drawnStudents = drawnStudents.filter(s => s !== currentWinner);
       updateStats();
     });
@@ -671,7 +666,6 @@
       loadClassData(currentClassName);
     });
 
-    // Modale Scrittura Diretta
     btnManualInput.addEventListener('click', () => {
       newClassName.value = currentClassName;
       rawNamesTextarea.value = (classesData[currentClassName] || []).join('\n');
@@ -697,7 +691,6 @@
       inputModal.classList.remove('active');
     });
 
-    // Caricamento File .TXT
     btnLoadFile.addEventListener('click', () => fileInput.click());
 
     fileInput.addEventListener('change', (e) => {
@@ -721,7 +714,6 @@
       reader.readAsText(file);
     });
 
-    // Toggle Audio
     audioToggleBtn.addEventListener('click', () => {
       audioEnabled = !audioEnabled;
       document.getElementById('audioStatus').textContent = audioEnabled ? 'Audio On' : 'Audio Off';
