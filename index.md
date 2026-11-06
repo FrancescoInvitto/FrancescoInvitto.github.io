@@ -10,4 +10,4 @@ Selezionate la materia dal menu a sinistra per accedere alle dispense, alle eser
 
 ## Estrattore studenti
 Questo strumento aiuta ad estrarre casualmente i nomi degli studenti per interrogazioni o esercizi.
-[🎯 Apri Estrattore Studenti](estrattore_studenti.html)
+![🎯 Apri Estrattore Studenti](estrattore_studenti.html)
