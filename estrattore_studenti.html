@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estrattore Studenti - Strumento Didattico per LIM</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome per Icone -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- JS Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0b132b;
+            color: #f8fafc;
+        }
+
+        /* Finestra Slot Machine */
+        .slot-window {
+            height: 280px;
+            overflow: hidden;
+            position: relative;
+            background: #090d16;
+            border-radius: 1.5rem;
+            border: 3px solid #1e3a8a;
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.95), 0 0 20px rgba(37, 99, 235, 0.2);
+        }
+
+        /* Cornice di selezione centrale */
+        .slot-selector {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 80px;
+            transform: translateY(-50%);
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.15) 0%, rgba(56, 189, 248, 0.25) 50%, rgba(37, 99, 235, 0.15) 100%);
+            border-top: 2px solid #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.3);
+            pointer-events-none: none;
+            z-index: 10;
+        }
+
+        /* Indicatore laterale freccia */
+        .slot-selector::before, .slot-selector::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+        .slot-selector::before {
+            left: 8px;
+            border-width: 8px 0 8px 12px;
+            border-color: transparent transparent transparent #38bdf8;
+        }
+        .slot-selector::after {
+            right: 8px;
+            border-width: 8px 12px 8px 0;
+            border-color: transparent #38bdf8 transparent transparent;
+        }
+
+        /* Container verticale del rullo */
+        .slot-reel {
+            will-change: transform;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .slot-item {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.85rem;
+            color: #93c5fd;
+            text-align: center;
+            padding: 0 1.5rem;
+            width: 100%;
+            user-select: none;
+            transition: filter 0.1s ease;
+        }
+
+        .slot-item.blur-fast {
+            filter: blur(4px);
+            opacity: 0.7;
+        }
+
+        .slot-item.blur-medium {
+            filter: blur(2px);
+            opacity: 0.85;
+        }
+
+        /* Gradienti sfumati top/bottom per mascherare lo scorrimento */
+        .slot-overlay-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to bottom, rgba(9, 13, 22, 0.98) 0%, rgba(9, 13, 22, 0) 100%);
+            z-index: 5;
+            pointer-events: none;
+        }
+        .slot-overlay-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to top, rgba(9, 13, 22, 0.98) 0%, rgba(9, 13, 22, 0) 100%);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* Scrollbar personalizzata */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e3a8a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-blue-600 selection:text-white">
+
+    <!-- HEADER / BARRA SUPERIORE -->
+    <header class="bg-slate-900/90 backdrop-blur border-b border-blue-900/50 sticky top-0 z-40 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-gradient-to-tr from-blue-700 to-sky-500 rounded-xl shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-graduation-cap text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white">Estrattore Studenti</h1>
+                    <p class="text-xs text-blue-300">Strumento Didattico per la Classe</p>
+                </div>
+            </div>
+
+            <!-- Pulsanti Controllo Audio & Gestione -->
+            <div class="flex items-center gap-3">
+                <button onclick="toggleAudio()" id="audio-toggle" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-blue-300 rounded-xl border border-blue-800/50 transition" title="Attiva/Disattiva Audio">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+                <button onclick="toggleSidebar()" class="p-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center gap-2">
+                    <i class="fa-solid fa-users-gear"></i>
+                    <span class="text-xs font-bold hidden sm:inline">Gestisci Classe</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- AREA PRINCIPALE -->
+    <main class="max-w-7xl mx-auto w-full px-4 py-6 flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+        <!-- SEZIONE SLOT MACHINE (3 Colonne) -->
+        <section class="lg:col-span-3 flex flex-col justify-between items-center bg-slate-900/60 rounded-2xl border border-blue-900/40 p-6 relative overflow-hidden min-h-[480px]">
+
+            <!-- OPZIONI RAPIDE E CONTEGGI -->
+            <div class="w-full flex flex-wrap justify-between items-center gap-4 bg-slate-950/60 p-3.5 rounded-xl border border-blue-900/40">
+                <div class="flex items-center gap-2">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="no-repeat-toggle" class="sr-only peer" checked onchange="updateStudentUI()">
+                        <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                    <span class="text-xs sm:text-sm font-medium text-slate-300">Escludi automaticamente già estratti</span>
+                </div>
+                
+                <div class="text-xs sm:text-sm text-slate-400 flex items-center gap-4">
+                    <div>Disponibili: <span id="available-count" class="font-bold text-sky-400">0</span></div>
+                    <div class="w-px h-4 bg-blue-900/60"></div>
+                    <div>Estratti: <span id="extracted-count" class="font-bold text-blue-300">0</span></div>
+                    <div class="w-px h-4 bg-blue-900/60"></div>
+                    <div>Totale: <span id="total-count" class="font-bold text-slate-300">0</span></div>
+                </div>
+            </div>
+
+            <!-- SLOT MACHINE VERTICALE -->
+            <div class="w-full flex flex-col items-center justify-center my-auto py-4">
+                
+                <div class="w-full max-w-lg relative">
+                    <!-- Finestra Slot -->
+                    <div class="slot-window">
+                        <div class="slot-overlay-top"></div>
+                        <div class="slot-selector"></div>
+                        <div class="slot-overlay-bottom"></div>
+                        
+                        <!-- Rullo Scorrevole -->
+                        <div id="slot-reel" class="slot-reel">
+                            <div class="slot-item">Premi per iniziare</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pulsante di Avvio -->
+                <button onclick="spinSlot()" id="btn-spin-slot" class="mt-8 px-10 py-4 bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white font-extrabold text-lg rounded-2xl shadow-xl shadow-blue-600/30 active:scale-95 transition-all flex items-center gap-3">
+                    <i class="fa-solid fa-bolt text-amber-300"></i> ESTRAI STUDENTE
+                </button>
+            </div>
+
+            <!-- MODALE RISULTATO -->
+            <div id="winner-modal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6">
+                <div class="text-sky-400 font-semibold tracking-wider uppercase text-sm mb-2">Lo studente estratto è</div>
+                <div id="winner-name" class="text-4xl sm:text-6xl font-black text-white text-center tracking-tight mb-8 bg-clip-text text-transparent bg-gradient-to-r from-white via-sky-100 to-blue-300">
+                    -
+                </div>
+                
+                <div class="flex flex-wrap gap-3 justify-center">
+                    <button onclick="closeWinnerModal()" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center gap-2">
+                        <i class="fa-solid fa-check"></i> Conferma ed Esci
+                    </button>
+                    <button onclick="markAsAbsentAndRepick()" class="px-6 py-3 bg-red-950/60 hover:bg-red-900/80 text-red-300 text-sm font-bold rounded-xl border border-red-900/60 transition flex items-center gap-2">
+                        <i class="fa-solid fa-user-slash"></i> Segna Assente e Riestrai
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- REGISTRO LEZIONE (1 Colonna) -->
+        <aside class="bg-slate-900/60 rounded-2xl border border-blue-900/40 p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between border-b border-blue-900/50 pb-3 mb-4">
+                    <h2 class="font-bold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-sky-400"></i> Registro Estratti
+                    </h2>
+                    <button onclick="clearHistory()" class="text-xs text-slate-400 hover:text-red-400 transition" title="Cancella Registro">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+
+                <!-- Lista estratti -->
+                <ul id="history-list" class="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                    <li id="empty-history" class="text-xs text-slate-500 text-center py-6">Nessuna estrazione effettuata in questa lezione.</li>
+                </ul>
+            </div>
+
+            <!-- Pulsante Ripristino Lista -->
+            <div class="pt-4 border-t border-blue-900/50 mt-4">
+                <button onclick="resetExcluded()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-blue-200 text-xs font-semibold rounded-xl border border-blue-800/40 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-left"></i> Ripristina Tutti gli Studenti
+                </button>
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- DRAWER GESTIONE CLASSE (NASCOSTO) -->
+    <div id="sidebar-drawer" class="fixed inset-y-0 right-0 w-full max-w-md bg-slate-900 border-l border-blue-900/60 z-50 transform translate-x-full transition-transform duration-300 shadow-2xl flex flex-col">
+        <div class="p-5 border-b border-blue-900/50 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-users-gear text-sky-400"></i> Elenco Studenti Classe
+            </h2>
+            <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white p-2">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <div class="p-5 flex-1 overflow-y-auto space-y-6">
+            <!-- Pulsanti Carica / Esporta file -->
+            <div class="grid grid-cols-2 gap-3">
+                <label class="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-blue-800/40 cursor-pointer transition">
+                    <i class="fa-solid fa-file-import text-sky-400"></i> Importa .TXT/.CSV
+                    <input type="file" id="file-input" accept=".txt,.csv" class="hidden" onchange="importFromFile(event)">
+                </label>
+                <button onclick="exportToFile()" class="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-blue-800/40 transition">
+                    <i class="fa-solid fa-file-export text-emerald-400"></i> Esporta .TXT
+                </button>
+            </div>
+
+            <!-- Form inserimento rapido -->
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">Aggiungi Nomi (uno per riga)</label>
+                <textarea id="bulk-names-input" rows="3" placeholder="Es: Rossi Mario&#10;Bianchi Luca&#10;Verdi Elena" class="w-full bg-slate-950 border border-blue-900/50 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-blue-500 mb-2"></textarea>
+                <button onclick="addBulkStudents()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow transition">
+                    Aggiungi alla Lista
+                </button>
+            </div>
+
+            <!-- Lista Studenti con Spunta Assenti -->
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Elenco Classe (<span id="drawer-student-count">0</span>)</label>
+                    <button onclick="loadSampleClass()" class="text-xs text-sky-400 hover:underline">Carica Classe Esempio</button>
+                </div>
+                <ul id="students-manage-list" class="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+                    <!-- Inserito via Javascript -->
+                </ul>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-blue-900/50 bg-slate-950/50">
+            <button onclick="clearAllStudents()" class="w-full py-2.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 text-xs font-bold rounded-xl border border-red-900/50 transition">
+                Svuota Elenco Studenti
+            </button>
+        </div>
+    </div>
+
+    <!-- FOOTER PERSONALIZZATO -->
+    <footer class="bg-slate-950 border-t border-blue-900/40 py-3.5 text-center text-xs text-slate-400">
+        <p>Sviluppato da <span class="text-sky-400 font-semibold">Prof. Mario Rossi</span> | Strumento Didattico per la Scuola</p>
+    </footer>
+
+    <!-- LOGICA JAVASCRIPT -->
+    <script>
+        // STATO APPLICAZIONE
+        let students = [];
+        let isExtracting = false;
+        let soundEnabled = true;
+        let history = [];
+        let currentWinner = null;
+
+        const ITEM_HEIGHT = 80; // Altezza del singolo elemento nello slot in px
+        const SLOT_CENTER_OFFSET = 100; // Centramento verticale rispetto al contenitore da 280px
+
+        // Sintetizzatore audio integrato (nessun file esterno necessario)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'tick') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(520, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.03);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.03);
+                } else if (type === 'win') {
+                    const now = audioCtx.currentTime;
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.12);
+                    osc.frequency.setValueAtTime(783.99, now + 0.24);
+                    osc.frequency.setValueAtTime(1046.50, now + 0.36);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+                    osc.start(now);
+                    osc.stop(now + 0.9);
+                }
+            } catch(e) {}
+        }
+
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('audio-toggle');
+            btn.innerHTML = soundEnabled ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark text-red-400"></i>';
+        }
+
+        // CLASSE DI PROVA
+        const sampleStudents = [
+            "Rossi Marco", "Bianchi Sofia", "Verdi Matteo", "Ferrari Giulia", 
+            "Esposito Luca", "Romano Alessandro", "Gallo Francesca", "Costa Andrea", 
+            "Fontana Chiara", "Conti Lorenzo", "Ricci Elena", "Bruno Davide", 
+            "De Luca Marta", "Moretti Gabriele", "Marini Sara", "Rizzo Tommaso"
+        ];
+
+        window.onload = function() {
+            const saved = localStorage.getItem('lim_students_slot');
+            if (saved) {
+                students = JSON.parse(saved);
+            } else {
+                students = sampleStudents.map((name, i) => ({ id: Date.now() + i, name, absent: false, extracted: false }));
+            }
+            updateStudentUI();
+            setupInitialReel();
+        };
+
+        function saveState() {
+            localStorage.setItem('lim_students_slot', JSON.stringify(students));
+            updateStudentUI();
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar-drawer').classList.toggle('translate-x-full');
+        }
+
+        function loadSampleClass() {
+            students = sampleStudents.map((name, i) => ({ id: Date.now() + i, name, absent: false, extracted: false }));
+            saveState();
+            setupInitialReel();
+        }
+
+        function clearAllStudents() {
+            if (confirm("Vuoi davvero cancellare tutti gli studenti dell'elenco?")) {
+                students = [];
+                saveState();
+                setupInitialReel();
+            }
+        }
+
+        function addBulkStudents() {
+            const input = document.getElementById('bulk-names-input');
+            const lines = input.value.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+            lines.forEach((name, idx) => {
+                students.push({ id: Date.now() + idx, name, absent: false, extracted: false });
+            });
+            input.value = '';
+            saveState();
+            setupInitialReel();
+        }
+
+        function toggleAbsent(id) {
+            const student = students.find(s => s.id === id);
+            if (student) {
+                student.absent = !student.absent;
+                saveState();
+            }
+        }
+
+        function deleteStudent(id) {
+            students = students.filter(s => s.id !== id);
+            saveState();
+            setupInitialReel();
+        }
+
+        function resetExcluded() {
+            students.forEach(s => s.extracted = false);
+            saveState();
+            alert("Tutti gli studenti sono stati ripristinati per l'estrazione!");
+        }
+
+        function getAvailableStudents() {
+            const noRepeat = document.getElementById('no-repeat-toggle').checked;
+            return students.filter(s => !s.absent && (!noRepeat || !s.extracted));
+        }
+
+        function updateStudentUI() {
+            const available = getAvailableStudents();
+            const extracted = students.filter(s => s.extracted).length;
+            
+            document.getElementById('available-count').innerText = available.length;
+            document.getElementById('extracted-count').innerText = extracted;
+            document.getElementById('total-count').innerText = students.length;
+            document.getElementById('drawer-student-count').innerText = students.length;
+
+            const manageList = document.getElementById('students-manage-list');
+            manageList.innerHTML = '';
+            students.forEach(s => {
+                const li = document.createElement('li');
+                li.className = `flex items-center justify-between p-2.5 rounded-xl border ${s.absent ? 'bg-red-950/20 border-red-900/40 text-slate-500' : 'bg-slate-800 border-blue-900/40 text-slate-200'}`;
+                li.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <input type="checkbox" ${s.absent ? 'checked' : ''} onchange="toggleAbsent(${s.id})" class="rounded border-blue-900 bg-slate-900 text-blue-600 focus:ring-0">
+                        <span class="text-xs font-medium ${s.absent ? 'line-through' : ''}">${s.name} ${s.extracted ? '<span class="text-[10px] text-sky-400 font-bold ml-1">(Estratto)</span>' : ''}</span>
+                    </div>
+                    <button onclick="deleteStudent(${s.id})" class="text-slate-500 hover:text-red-400 text-xs px-1">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                manageList.appendChild(li);
+            });
+        }
+
+        function setupInitialReel() {
+            const reel = document.getElementById('slot-reel');
+            const available = getAvailableStudents();
+            if (available.length === 0) {
+                reel.style.transform = `translateY(${SLOT_CENTER_OFFSET}px)`;
+                reel.innerHTML = `<div class="slot-item">Nessuno studente disponibile</div>`;
+                return;
+            }
+            reel.style.transform = `translateY(${SLOT_CENTER_OFFSET}px)`;
+            reel.innerHTML = `<div class="slot-item">${available[0].name}</div>`;
+        }
+
+        function importFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 0);
+                students = lines.map((name, i) => ({ id: Date.now() + i, name, absent: false, extracted: false }));
+                saveState();
+                setupInitialReel();
+            };
+            reader.readAsText(file);
+        }
+
+        function exportToFile() {
+            const text = students.map(s => s.name).join('\n');
+            const blob = new Blob([text], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'lista_studenti.txt';
+            a.click();
+        }
+
+        // ANIMAZIONE FISICA SLOT MACHINE (15 SECONDI ESATTI)
+        function spinSlot() {
+            if (isExtracting) return;
+            const available = getAvailableStudents();
+            if (available.length === 0) return alert("Nessuno studente disponibile per l'estrazione!");
+
+            isExtracting = true;
+            const btn = document.getElementById('btn-spin-slot');
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const reel = document.getElementById('slot-reel');
+            
+            // Scegli lo studente vincente
+            currentWinner = available[Math.floor(Math.random() * available.length)];
+
+            // Genera la sequenza di scorrimento verticale lunga 15 secondi
+            const totalItemsCount = 140; // Numero di elementi scorrevoli
+            const reelList = [];
+
+            for (let i = 0; i < totalItemsCount - 1; i++) {
+                const randName = available[Math.floor(Math.random() * available.length)].name;
+                reelList.push(randName);
+            }
+            // L'ultimo elemento è lo studente estratto
+            reelList.push(currentWinner.name);
+
+            // Costruisci gli elementi HTML del rullo
+            reel.innerHTML = reelList.map(name => `<div class="slot-item">${name}</div>`).join('');
+
+            const targetY = -( (totalItemsCount - 1) * ITEM_HEIGHT ) + SLOT_CENTER_OFFSET;
+            const startY = SLOT_CENTER_OFFSET;
+            const totalDuration = 15000; // 15 secondi esatti
+            const startTime = performance.now();
+            let lastAudioIndex = -1;
+
+            // Curva Bezier personalizzata per accelerazione e decelerazione dolce
+            function easeInOutCubic(t) {
+                return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+            }
+
+            function animate(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / totalDuration, 1);
+                
+                // Posizione verticale corrente
+                const easeProgress = easeInOutCubic(progress);
+                const currentY = startY + (targetY - startY) * easeProgress;
+                
+                reel.style.transform = `translateY(${currentY}px)`;
+
+                // Calcolo velocità per effetto sfuocato (Blur)
+                const currentIndex = Math.floor(Math.abs(currentY - SLOT_CENTER_OFFSET) / ITEM_HEIGHT);
+                if (currentIndex !== lastAudioIndex && progress < 0.98) {
+                    playSound('tick');
+                    lastAudioIndex = currentIndex;
+                }
+
+                // Applica dinamica sfocatura visiva in base alla fase dell'animazione
+                const reelItems = reel.children;
+                if (progress > 0.05 && progress < 0.85) {
+                    reel.classList.add('blur-fast');
+                } else if (progress >= 0.85 && progress < 0.96) {
+                    reel.classList.remove('blur-fast');
+                    reel.classList.add('blur-medium');
+                } else {
+                    reel.classList.remove('blur-fast', 'blur-medium');
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Estrazione completata
+                    isExtracting = false;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                    // Assicura posizione precisa finale
+                    reel.style.transform = `translateY(${targetY}px)`;
+                    showWinner(currentWinner);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // RISULTATI & VINCITORE
+        function showWinner(student) {
+            student.extracted = true;
+            saveState();
+            addToHistory(student.name);
+
+            document.getElementById('winner-name').innerText = student.name;
+            document.getElementById('winner-modal').classList.remove('hidden');
+
+            playSound('win');
+            confetti({ particleCount: 130, spread: 80, origin: { y: 0.6 } });
+        }
+
+        function closeWinnerModal() {
+            document.getElementById('winner-modal').classList.add('hidden');
+        }
+
+        function markAsAbsentAndRepick() {
+            if (currentWinner) {
+                currentWinner.absent = true;
+                currentWinner.extracted = false;
+                saveState();
+            }
+            closeWinnerModal();
+            setTimeout(() => {
+                spinSlot();
+            }, 300);
+        }
+
+        function addToHistory(name) {
+            history.unshift({ name, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+            const list = document.getElementById('history-list');
+            const emptyMsg = document.getElementById('empty-history');
+            if (emptyMsg) emptyMsg.remove();
+
+            const li = document.createElement('li');
+            li.className = 'flex justify-between items-center text-xs bg-slate-800/80 p-2.5 rounded-xl border border-blue-900/40 text-slate-300';
+            li.innerHTML = `
+                <span class="font-semibold text-white"><i class="fa-solid fa-check text-sky-400 mr-1.5"></i>${name}</span>
+                <span class="text-[10px] text-slate-400 font-mono">${history[0].time}</span>
+            `;
+            list.prepend(li);
+        }
+
+        function clearHistory() {
+            history = [];
+            document.getElementById('history-list').innerHTML = '<li id="empty-history" class="text-xs text-slate-500 text-center py-6">Nessuna estrazione effettuata.</li>';
+        }
+    </script>
+</body>
+</html>
